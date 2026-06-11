@@ -3,6 +3,25 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 
 
+BUSINESS_KEYWORDS = [
+    "about",
+    "company",
+    "team",
+    "leadership",
+    "management",
+    "services",
+    "products",
+    "solutions",
+    "business",
+    "contact",
+    "careers",
+    "investors",
+    "news",
+    "media",
+    "sustainability"
+]
+
+
 def get_links(url):
     response = requests.get(url)
 
@@ -31,6 +50,15 @@ def get_links(url):
             link_domain = urlparse(full_url).netloc
 
             if link_domain == base_domain:
-                links.add(full_url)
+
+                is_business_link = False
+
+                for keyword in BUSINESS_KEYWORDS:
+                    if keyword in full_url.lower():
+                        is_business_link = True
+                        break
+
+                if is_business_link:
+                    links.add(full_url)
 
     return list(links)
