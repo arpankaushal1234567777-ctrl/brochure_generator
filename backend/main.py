@@ -1,5 +1,7 @@
-from crawler.crawler import get_links
+from crawler.crawler import crawl
 
-url = "https://www.ril.com"
+visited = set()
 
-print(get_links(url))
+crawl("https://www.ril.com", visited)
+
+print("\nTotal Pages Visited:", len(visited))

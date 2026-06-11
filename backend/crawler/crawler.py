@@ -62,3 +62,18 @@ def get_links(url):
                     links.add(full_url)
 
     return list(links)
+
+
+def crawl(url, visited):
+    
+    if url in visited:
+        return
+
+    visited.add(url)
+
+    print("Visiting:", url)
+
+    links = get_links(url)
+
+    for link in links:
+        crawl(link, visited)
