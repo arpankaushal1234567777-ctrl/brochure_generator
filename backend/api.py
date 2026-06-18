@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from main import generate_brochure
 
+
 app = FastAPI(
     title="Brochure Generator API",
     description="Generate AI-powered company brochures by crawling a website.",
