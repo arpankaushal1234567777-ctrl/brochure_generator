@@ -84,7 +84,7 @@ def truncate_text(text, max_words=MAX_CONTENT_WORDS):
     words = text.split()
     return " ".join(words[:max_words])
 
-def chunk_text(text, chunk_size=500):
+def chunk_text(text, chunk_size=2000):
 
     words = text.split()
 
