@@ -7,7 +7,7 @@ CRITICAL RULES:
 1. Use ONLY information explicitly present in the provided content.
 
 2. NEVER invent:
-- products
+- products 
 - services
 - industries
 - technologies

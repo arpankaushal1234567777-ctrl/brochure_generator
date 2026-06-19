@@ -49,4 +49,4 @@ Content:
 
         print(f"Summarization failed: {e}")
 
-        return ""
+        return chunk
