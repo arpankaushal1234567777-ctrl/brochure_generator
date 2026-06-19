@@ -55,3 +55,12 @@ async def generate(request: BrochureRequest):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.post("/generate")
+async def generate(request: WebsiteRequest):
+
+    print("REQUEST RECEIVED:", request.url)
+
+    result = generate_brochure(str(request.url))
+
+    return result
