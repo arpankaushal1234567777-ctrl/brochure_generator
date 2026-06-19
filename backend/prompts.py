@@ -1,81 +1,174 @@
 
 BROCHURE_SYSTEM_PROMPT = """
-You are a professional corporate brochure writer.
+You are a corporate brochure extraction assistant.
 
-Use ONLY information explicitly present in the provided content.
+CRITICAL RULES:
 
-Do NOT invent:
-- company names
+1. Use ONLY information explicitly present in the provided content.
+
+2. NEVER invent:
 - products
 - services
 - industries
+- technologies
+- locations
 - statistics
-- awards
+- company history
 - achievements
+- awards
 
-If information is unavailable, omit it.
+3. If information is not present, return:
+"Information not available"
 
-Write in a professional brochure style.
+4. Do not use generic business language such as:
+- innovative solutions
+- industry-leading
+- cutting-edge
+- world-class
+- tailored services
+- trusted partner
 
-Do not use placeholders such as:
-[Company Name]
-[Product Name]
-[Service Name]
+unless those exact phrases appear in the content.
 
-Return only the final brochure content.
+5. Extraction is preferred over summarization.
+
+Return only the requested section.
 """
 SECTION_TEMPLATES = {
+
     "overview": """
-Write a professional company overview (150-200 words).
+Write a professional company overview using ONLY the information below.
+
+Do not invent facts.
+If information is missing, state "Information not available".
 
 Content:
 {content}
 """,
-    "mission":
-        "Extract and summarize the company's mission, vision and core values from: {content}",
 
-    "leadership":
-        "Summarize leadership and management information from: {content}",
+    "mission": """
+Extract the company's mission, vision and core values.
 
-    "products":
-        """
-        List up to 6 key products.
+Use ONLY the information below.
 
-    Return bullet points only.
-        """,
+Content:
+{content}
+""",
 
-    "services":
-        """
-        List up to 6 key services.
+    "leadership": """
+Summarize leadership and management information.
 
-        Return bullet points only.
-        """,
+Use ONLY the information below.
 
-    "solutions":
-        "Describe the business solutions offered by the company from: {content}",
+Content:
+{content}
+""",
 
-    "industry":
-        """
-        Summarize industries served.
+    "products": """
+Extract products explicitly mentioned in the content.
 
-        Maximum 100 words.
-        """,
+Rules:
+- Do NOT invent products.
+- Do NOT infer products.
+- If no products are mentioned, return:
+  "Information not available"
 
-    "technology":
-        "Summarize the company's technology capabilities and innovations from: {content}",
+Content:
+{content}
 
-    "differentiators":
-        "Identify key differentiators and competitive advantages from: {content}",
+Return bullet points only.
+""",
 
-    "global_presence":
-        "Summarize the company's global reach, locations and market presence from: {content}",
+    "services": """
+Extract services explicitly mentioned in the content.
 
-    "sustainability":
-        "Summarize sustainability, ESG and environmental initiatives from: {content}",
+Rules:
+- Do NOT invent services.
+- Do NOT infer services.
+- If no services are mentioned, return:
+  "Information not available"
 
-    "awards":
-        "Extract awards, recognitions and achievements from: {content}",
+Content:
+{content}
 
-    "contact":
-        "Generate a professional contact section from: {content}"
+Return bullet points only.
+""",
+
+    "solutions": """
+Describe business solutions explicitly mentioned.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "industry": """
+Extract industries served.
+
+Rules:
+- Do NOT invent industries.
+- Do NOT infer industries.
+- If industries are not mentioned, return:
+  "Information not available"
+
+Content:
+{content}
+
+Return bullet points only.
+""",
+
+    "technology": """
+Summarize technology capabilities and innovations.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "differentiators": """
+Identify differentiators and competitive advantages.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "global_presence": """
+Summarize global reach, locations and market presence.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "sustainability": """
+Summarize sustainability and ESG initiatives.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "awards": """
+Extract awards and recognitions.
+
+Use ONLY the information below.
+
+Content:
+{content}
+""",
+
+    "contact": """
+Extract contact information.
+
+Use ONLY the information below.
+
+Content:
+{content}
+"""
 }
