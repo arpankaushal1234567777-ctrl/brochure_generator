@@ -81,6 +81,10 @@ def generate_brochure(website_url: str) -> dict:
             if len(data["content"].split()) < MIN_CONTENT_WORDS:
                 continue
 
+            from compressor import compress_page
+
+            data["compressed_content"] = compress_page(data["content"])
+
             snippet = data["content"][:500]
             if snippet in seen_snippets:
                 continue
@@ -88,11 +92,10 @@ def generate_brochure(website_url: str) -> dict:
 
             lower_url = url.lower()
             page_ctx = (
-                lower_url + " " +
-                data.get("title", "").lower() + " " +
-                " ".join(data.get("headings", [])).lower() + " " +
-                data.get("content", "")[:600].lower()
-            )
+            lower_url + " " +
+            data.get("title", "").lower() + " " +
+            " ".join(data.get("headings", [])).lower() + " " +
+            data.get("compressed_content", "").lower())
 
             scores = {"overview": 0, "contact": 0, "product": 0, "service": 0, "industry": 0}
 

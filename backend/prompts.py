@@ -26,8 +26,7 @@ Return only the final brochure content.
 """
 SECTION_TEMPLATES = {
     "overview":
-        "Write a professional company overview (150-200 words) based only on: {content}",
-
+        "Write a professional company overview (150-200 words)",
     "mission":
         "Extract and summarize the company's mission, vision and core values from: {content}",
 
@@ -35,16 +34,28 @@ SECTION_TEMPLATES = {
         "Summarize leadership and management information from: {content}",
 
     "products":
-        "Create a brochure section describing the company's products based on: {content}",
+        """
+        List up to 6 key products.
+
+    Return bullet points only.
+        """,
 
     "services":
-        "Create professional service bullet points based on: {content}",
+        """
+        List up to 6 key services.
+
+        Return bullet points only.
+        """,
 
     "solutions":
         "Describe the business solutions offered by the company from: {content}",
 
     "industry":
-        "Explain the company's industry expertise and sectors served based on: {content}",
+        """
+        Summarize industries served.
+
+        Maximum 100 words.
+        """,
 
     "technology":
         "Summarize the company's technology capabilities and innovations from: {content}",

@@ -3,8 +3,9 @@ from config import COMBINE_TOP_PAGES
 
 
 def combine_pages(pages):
+
     return "\n\n".join(
-        page["content"]
+        page["compressed_content"]
         for page in pages[:COMBINE_TOP_PAGES]
     )
 
