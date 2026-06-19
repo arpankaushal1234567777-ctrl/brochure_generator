@@ -12,6 +12,7 @@ app = FastAPI(
 
 origins = [
     "http://localhost:5173",
+    "https://brochuregenerator47.vercel.app"
 ]
 
 
