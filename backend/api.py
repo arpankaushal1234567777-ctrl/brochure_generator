@@ -41,6 +41,7 @@ class BrochureResponse(BaseModel):
     products: str
     industry: str
     contact: ContactInfo
+    pdf_data: str
 
 
 @app.post("/generate", response_model=BrochureResponse)

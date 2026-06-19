@@ -347,9 +347,18 @@
   </div>
 
   <div class="brochure-actions">
-    <button class="btn-secondary" onclick="copyJSON()">Copy JSON</button>
-    <button class="btn-primary" onclick="downloadJSON()">Download JSON</button>
-  </div>
+  <button class="btn-secondary" onclick="copyJSON()">
+      Copy JSON
+  </button>
+
+  <button class="btn-secondary" onclick="downloadJSON()">
+      Download JSON
+  </button>
+
+  <button class="btn-primary" onclick="downloadPDF()">
+      Download PDF
+  </button>
+</div>
 </section>
 
 <footer></footer>
@@ -359,6 +368,7 @@
   const API_BASE ="https://brochuregenerator-production-0125.up.railway.app"; 
 
   let lastBrochure = null;
+  let pdfBlob = null;
 
   function setStatus(msg, type = "") {
     const el = document.getElementById("status");
@@ -393,6 +403,18 @@
 
   function renderBrochure(data) {
     lastBrochure = data;
+
+    if (data.pdf_data) {
+
+    const bytes = atob(data.pdf_data);
+
+    const array = new Uint8Array(
+        [...bytes].map(c => c.charCodeAt(0))
+    );
+
+    pdfBlob = new Blob(
+        [array],
+        { type: "application/pdf" });}
 
     document.getElementById("outCompany").textContent = data.company_name || "Unknown Company";
     document.getElementById("outMeta").textContent = `Generated ${new Date().toLocaleString()}`;
@@ -468,12 +490,48 @@
     a.click();
   }
 
+  function downloadPDF() {
+
+    if (!pdfBlob) {
+
+        setStatus(
+            "PDF not available.",
+            "error"
+        );
+
+        return;
+    }
+
+    const url =
+        URL.createObjectURL(pdfBlob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+
+    a.download =
+      `${(lastBrochure.company_name || "brochure")
+      .replace(/\s+/g, "_")}.pdf`;
+
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
+
   function copyJSON() {
     if (!lastBrochure) return;
     navigator.clipboard.writeText(JSON.stringify(lastBrochure, null, 2))
       .then(() => setStatus("JSON copied to clipboard.", "ok"))
       .catch(() => setStatus("Copy failed — try manually.", "error"));
   }
+
+  window.addEventListener(
+    "beforeunload",
+    () => {
+        pdfBlob = null;
+    }
+);
 </script>
 </body>
 </html>

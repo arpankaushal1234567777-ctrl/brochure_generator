@@ -5,14 +5,16 @@ from reportlab.platypus import (
     PageBreak
 )
 
+from io import BytesIO
+
 from reportlab.lib.styles import getSampleStyleSheet
 
 
 def generate_pdf(brochure):
 
-    filename = f"{brochure['company_name'].replace(' ', '_')}.pdf"
+    buffer = BytesIO()
 
-    doc = SimpleDocTemplate(filename)
+    doc = SimpleDocTemplate(buffer)
 
     styles = getSampleStyleSheet()
 
@@ -78,4 +80,6 @@ def generate_pdf(brochure):
 
     doc.build(content)
 
-    return filename
+    buffer.seek(0)
+
+    return buffer.getvalue()

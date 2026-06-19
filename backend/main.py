@@ -62,6 +62,8 @@ def generate_brochure(website_url: str) -> dict:
         else:
             company_profile["company_name"] = "Protected Corporate Domain"
 
+            company_profile["logo_url"] = homepage.get("logo_url")
+
         ranked_links = rank_urls(links)
         top_urls = [url for score, url in ranked_links[:TOP_N]]
 
@@ -178,11 +180,13 @@ def generate_brochure(website_url: str) -> dict:
 
     brochure = build_brochure(company_profile)
 
-    #from pdf_generator import generate_pdf
+    from pdf_generator import generate_pdf
+    import base64
 
-    #pdf_file = generate_pdf(brochure)
+    pdf_bytes = generate_pdf(brochure)
 
-    #brochure["pdf_file"] = pdf_file
+    brochure["pdf_data"] = base64.b64encode(
+    pdf_bytes).decode("utf-8")
 
     metrics["generation_time"] = round(time.time() - generation_start,2)
 
@@ -193,9 +197,9 @@ def generate_brochure(website_url: str) -> dict:
 
     metrics["total_time"] = round(time.time() - start_time,2)
 
-    brochure["metrics"] = metrics
+    #brochure["metrics"] = metrics
 
     #with open("brochure.json", "w") as f:
-     #   json.dump(brochure, f, indent=4)
+     #json.dump(brochure, f, indent=4)
 
     return brochure

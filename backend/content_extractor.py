@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 from bs4 import BeautifulSoup
 from curl_cffi import requests
+from urllib.parse import urljoin
 
 session = requests.Session(impersonate="chrome")
 session.headers.update({
@@ -12,6 +13,22 @@ session.headers.update({
     "Accept-Language": "en-US,en;q=0.9",
     "Connection": "keep-alive"
 })
+
+def extract_logo(soup, url):
+
+    logo_selectors = [
+        'img[alt*="logo" i]',
+        'img[src*="logo" i]',
+        'header img'
+    ]
+
+    for selector in logo_selectors:
+        logo = soup.select_one(selector)
+
+        if logo and logo.get("src"):
+            return urljoin(url, logo["src"])
+
+    return None
 
 def download_page(url):
     response = session.get(url, timeout=10)
@@ -103,6 +120,7 @@ def extract_content_from_url(url):
         soup = parse_html(html)
 
         company_name = extract_company_name(soup, url)
+        logo_url = extract_logo(soup, url)
 
         title = ""
         if soup.title:
@@ -122,7 +140,8 @@ def extract_content_from_url(url):
             "content": content,
             "emails": emails,
             "phones": phones,
-            "company_name": company_name
+            "company_name": company_name,
+            "logo_url": logo_url
         }
     except Exception as e:
         print(f"Failed to extract {url}: {e}")
