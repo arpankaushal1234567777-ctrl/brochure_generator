@@ -31,6 +31,11 @@ def build_brochure(profile):
 
         combined_content = combine_pages(pages)
 
+        print("\n===================")
+        print(section_name.upper())
+        print(combined_content[:2000])
+        print("===================\n")
+
         brochure[section_name] = get_ai_response(
             section_name,
             combined_content
