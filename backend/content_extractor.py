@@ -84,6 +84,19 @@ def truncate_text(text, max_words=MAX_CONTENT_WORDS):
     words = text.split()
     return " ".join(words[:max_words])
 
+def chunk_text(text, chunk_size=500):
+
+    words = text.split()
+
+    chunks = []
+
+    for i in range(0, len(words), chunk_size):
+        chunk = " ".join(words[i:i + chunk_size])
+        chunks.append(chunk)
+
+    return chunks
+
+
 def extract_content_from_url(url):
     try:
         html = download_page(url)
