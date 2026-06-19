@@ -25,8 +25,12 @@ Do not use placeholders such as:
 Return only the final brochure content.
 """
 SECTION_TEMPLATES = {
-    "overview":
-        "Write a professional company overview (150-200 words)",
+    "overview": """
+Write a professional company overview (150-200 words).
+
+Content:
+{content}
+""",
     "mission":
         "Extract and summarize the company's mission, vision and core values from: {content}",
 

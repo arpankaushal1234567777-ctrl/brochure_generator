@@ -178,11 +178,11 @@ def generate_brochure(website_url: str) -> dict:
 
     brochure = build_brochure(company_profile)
 
-    from pdf_generator import generate_pdf
+    #from pdf_generator import generate_pdf
 
-    pdf_file = generate_pdf(brochure)
+    #pdf_file = generate_pdf(brochure)
 
-    brochure["pdf_file"] = pdf_file
+    #brochure["pdf_file"] = pdf_file
 
     metrics["generation_time"] = round(time.time() - generation_start,2)
 
@@ -195,7 +195,7 @@ def generate_brochure(website_url: str) -> dict:
 
     brochure["metrics"] = metrics
 
-    with open("brochure.json", "w") as f:
-        json.dump(brochure, f, indent=4)
+    #with open("brochure.json", "w") as f:
+     #   json.dump(brochure, f, indent=4)
 
     return brochure
