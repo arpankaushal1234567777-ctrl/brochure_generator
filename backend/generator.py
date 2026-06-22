@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ def _normalize_list(items) -> list[str]:
     cleaned = []
     for item in items or []:
         value = " ".join(str(item).split()).strip(" -")
-        if not value:
+        if not value or value == NOT_FOUND_MESSAGE:
             continue
         key = value.lower()
         if key in seen:
@@ -43,18 +44,50 @@ def _normalize_overview(value) -> str:
     return text or NOT_FOUND_MESSAGE
 
 
+def _repair_json(raw: str) -> str:
+    """Attempt to repair truncated JSON by closing open structures."""
+    # Strip any markdown fences
+    raw = re.sub(r"^```[a-z]*\n?", "", raw.strip())
+    raw = re.sub(r"\n?```$", "", raw.strip())
+    raw = raw.strip()
+
+    # If it already parses, great
+    try:
+        json.loads(raw)
+        return raw
+    except json.JSONDecodeError:
+        pass
+
+    # Try to close truncated JSON by counting open braces/brackets
+    open_braces = raw.count("{") - raw.count("}")
+    open_brackets = raw.count("[") - raw.count("]")
+
+    # Remove trailing comma if present before closing
+    repaired = raw.rstrip().rstrip(",")
+    repaired += "]" * open_brackets
+    repaired += "}" * open_braces
+
+    try:
+        json.loads(repaired)
+        return repaired
+    except json.JSONDecodeError:
+        return raw
+
+
 def generate_brochure_sections(content_data: str) -> dict:
+    empty = {
+        "overview": NOT_FOUND_MESSAGE,
+        "services": [],
+        "products": [],
+        "industries": [],
+    }
+
     if not content_data.strip():
-        return {
-            "overview": NOT_FOUND_MESSAGE,
-            "services": [],
-            "products": [],
-            "industries": [],
-        }
+        return empty
 
     user_prompt = BROCHURE_JSON_TEMPLATE.format(content=content_data)
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             resp = _get_client().chat.completions.create(
                 messages=[
@@ -66,30 +99,37 @@ def generate_brochure_sections(content_data: str) -> dict:
                 max_tokens=GROQ_MAX_TOKENS,
                 response_format={"type": "json_object"},
             )
-            content = (resp.choices[0].message.content or "").strip()
-            parsed = json.loads(content)
-            return {
+            raw = (resp.choices[0].message.content or "").strip()
+            print(f"  [Groq] raw response length: {len(raw)} chars")
+
+            repaired = _repair_json(raw)
+            parsed = json.loads(repaired)
+
+            result = {
                 "overview": _normalize_overview(parsed.get("overview")),
                 "services": _normalize_list(parsed.get("services")),
                 "products": _normalize_list(parsed.get("products")),
                 "industries": _normalize_list(parsed.get("industries")),
             }
-        except Exception as e:
-            if "429" in str(e) and attempt == 0:
-                print("  [Groq] rate-limited — waiting 5 s then retrying…")
-                time.sleep(3)
-                continue
-            print(f"  [Groq] error generating brochure: {e}")
-            return {
-                "overview": NOT_FOUND_MESSAGE,
-                "services": [],
-                "products": [],
-                "industries": [],
-            }
+            print(f"  [Groq] extracted — overview: {len(result['overview'])} chars, "
+                  f"services: {len(result['services'])}, products: {len(result['products'])}, "
+                  f"industries: {len(result['industries'])}")
+            return result
 
-    return {
-        "overview": NOT_FOUND_MESSAGE,
-        "services": [],
-        "products": [],
-        "industries": [],
-    }
+        except json.JSONDecodeError as e:
+            print(f"  [Groq] JSON parse error on attempt {attempt + 1}: {e}")
+            if attempt < 2:
+                time.sleep(1)
+                continue
+        except Exception as e:
+            if "429" in str(e) and attempt < 2:
+                print(f"  [Groq] rate-limited — waiting 5s then retrying…")
+                time.sleep(5)
+                continue
+            print(f"  [Groq] error on attempt {attempt + 1}: {e}")
+            if attempt < 2:
+                time.sleep(1)
+                continue
+
+    print("  [Groq] all attempts failed, returning empty result")
+    return empty
