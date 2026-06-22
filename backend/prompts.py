@@ -13,12 +13,12 @@ Rules:
 
 BROCHURE_JSON_TEMPLATE = f"""Using only the extracted website evidence below, produce one JSON object with exactly this schema:
 
-{{
+{{{{
   "overview": "2-3 grounded sentences or {NOT_FOUND_MESSAGE}",
   "services": ["plain string", "plain string"],
   "products": ["plain string", "plain string"],
   "industries": ["plain string", "plain string"]
-}}
+}}}}
 
 Rules:
 - Use only facts explicitly present in the evidence.
