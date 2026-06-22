@@ -9,6 +9,7 @@ from pdf_generator import generate_pdf
 from prompts import NOT_FOUND_MESSAGE
 
 INVALID_EMAILS = {"you@yourbusiness.com", "example@example.com"}
+GENERIC_EMAIL_HINTS = ("info@", "contact@", "support@", "help@", "sales@", "media@", "press@", "ir@", "investor@", "care@", "corpcomm@")
 
 BLOCKED_TITLES = {
     "request has been blocked",
@@ -28,7 +29,8 @@ def _is_blocked(data: dict | None) -> bool:
 
 def _normalize_contact(values: list[str], limit: int = 5) -> list[str]:
     seen = set()
-    cleaned = []
+    preferred = []
+    others = []
     for value in values:
         item = value.strip()
         if not item or item in INVALID_EMAILS:
@@ -37,6 +39,24 @@ def _normalize_contact(values: list[str], limit: int = 5) -> list[str]:
         if key in seen:
             continue
         seen.add(key)
+        target = preferred if any(hint in key for hint in GENERIC_EMAIL_HINTS) else others
+        target.append(item)
+    return (preferred + others)[:limit]
+
+
+def _normalize_phones(values: list[str], limit: int = 5) -> list[str]:
+    seen = set()
+    cleaned = []
+    for value in values:
+        item = value.strip()
+        if not item:
+            continue
+        digits = "".join(ch for ch in item if ch.isdigit())
+        if len(digits) < 10:
+            continue
+        if digits in seen:
+            continue
+        seen.add(digits)
         cleaned.append(item)
         if len(cleaned) == limit:
             break
@@ -120,6 +140,8 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
             "services": [],
             "industries": [],
         }
+        contact_emails = []
+        contact_phones = []
         seen_snippets: set[str] = set()
         for data in unique_pages:
             if not data or _is_blocked(data):
@@ -193,11 +215,12 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
             _push_candidate(section_candidates, "services", scores["services"], data)
             _push_candidate(section_candidates, "industries", scores["industries"], data)
 
-            company_profile["emails"].extend(data.get("emails", []))
-            company_profile["phones"].extend(data.get("phones", []))
+            if scores["contact"] > 0:
+                contact_emails.extend(data.get("emails", []))
+                contact_phones.extend(data.get("phones", []))
 
-        company_profile["emails"] = _normalize_contact(company_profile["emails"])
-        company_profile["phones"] = _normalize_contact(company_profile["phones"])
+        company_profile["emails"] = _normalize_contact(contact_emails)
+        company_profile["phones"] = _normalize_phones(contact_phones)
         company_profile["overview_pages"] = _select_pages(section_candidates["overview"], TOP_N)
         company_profile["contact_pages"] = _select_pages(section_candidates["contact"], TOP_N)
         company_profile["product_pages"] = _select_pages(section_candidates["products"], TOP_N)

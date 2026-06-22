@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import time
 from groq import Groq
 from dotenv import load_dotenv
@@ -34,6 +35,43 @@ def _normalize_list(items: list[str]) -> list[str]:
         seen.add(key)
         cleaned.append(value)
     return cleaned
+
+
+def _parse_list_response(content: str) -> list[str]:
+    text = content.strip()
+    if not text or text == NOT_FOUND_MESSAGE:
+        return []
+
+    fenced = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.DOTALL).strip()
+
+    try:
+        parsed = json.loads(fenced)
+        if isinstance(parsed, list):
+            return _normalize_list([str(item) for item in parsed])
+    except Exception:
+        pass
+
+    lines = []
+    for raw_line in fenced.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        line = re.sub(r"^[-*•]\s*", "", line)
+        if line.startswith('"') and line.endswith('"'):
+            line = line[1:-1]
+        line = line.strip(" ,")
+        if line and line.lower() != NOT_FOUND_MESSAGE.lower():
+            lines.append(line)
+
+    if len(lines) == 1 and lines[0].startswith("[") and lines[0].endswith("]"):
+        try:
+            parsed = json.loads(lines[0])
+            if isinstance(parsed, list):
+                return _normalize_list([str(item) for item in parsed])
+        except Exception:
+            return []
+
+    return _normalize_list(lines)
 
 
 def _clean_overview(text: str) -> str:
@@ -73,14 +111,7 @@ def get_ai_response(section_name: str, content_data: str):
             content = (resp.choices[0].message.content or "").strip()
             if section_name == "overview":
                 return _clean_overview(content)
-
-            if content == NOT_FOUND_MESSAGE:
-                return []
-
-            parsed = json.loads(content)
-            if isinstance(parsed, list):
-                return _normalize_list([str(item) for item in parsed])
-            return []
+            return _parse_list_response(content)
         except Exception as e:
             if "429" in str(e) and attempt == 0:
                 print("  [Groq] rate-limited — waiting 5 s then retrying…")

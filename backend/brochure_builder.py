@@ -26,9 +26,21 @@ def _compress_all(pages: list[dict]) -> list[dict]:
 def _combine(pages: list[dict]) -> str:
     chunks = []
     for page in pages[:COMBINE_TOP_PAGES]:
-        text = page.get("compressed_content") or page.get("content") or ""
-        if text:
-            chunks.append(f"URL: {page['url']}\nTitle: {page.get('title', '')}\n{text}")
+        compressed = page.get("compressed_content") or ""
+        raw = page.get("content") or ""
+        headings = ", ".join(page.get("headings", [])[:8])
+        raw_excerpt = " ".join(raw.split()[:220])
+        evidence_parts = []
+        if headings:
+            evidence_parts.append(f"Headings: {headings}")
+        if compressed and compressed != NOT_FOUND_MESSAGE:
+            evidence_parts.append(f"Cleaned facts:\n{compressed}")
+        if raw_excerpt:
+            evidence_parts.append(f"Raw excerpt:\n{raw_excerpt}")
+        if evidence_parts:
+            chunks.append(
+                f"URL: {page['url']}\nTitle: {page.get('title', '')}\n" + "\n".join(evidence_parts)
+            )
     return "\n\n".join(chunks)
 
 

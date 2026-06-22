@@ -24,6 +24,14 @@ _PROMPT = f"""You are cleaning extracted website text for downstream brochure ge
 
 Use only the text provided. Do not add outside knowledge.
 Return concise factual bullet points only when they are explicitly present.
+Preserve exact named entities whenever possible, especially:
+- company descriptions
+- products and product families
+- services and offerings
+- industries, sectors, and markets
+- contact details
+
+If the source contains useful bullet lists, offerings, product names, or markets, keep them as distinct bullets.
 Remove:
 - navigation labels
 - repeated footer text
