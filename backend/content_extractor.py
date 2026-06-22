@@ -51,6 +51,41 @@ def extract_headings(soup):
             headings.append(text)
     return headings
 
+
+def extract_meta_description(soup):
+    tag = soup.find("meta", attrs={"name": "description"})
+    if tag and tag.get("content"):
+        return tag["content"].strip()
+    tag = soup.find("meta", attrs={"property": "og:description"})
+    if tag and tag.get("content"):
+        return tag["content"].strip()
+    return ""
+
+
+def extract_list_items(soup, limit=20):
+    items = []
+    seen = set()
+    for li in soup.find_all("li"):
+        text = li.get_text(separator=" ", strip=True)
+        if len(text) < 4 or len(text) > 120:
+            continue
+        key = text.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(text)
+        if len(items) >= limit:
+            break
+    return items
+
+
+def extract_lead_paragraph(soup):
+    for tag in soup.find_all("p"):
+        text = tag.get_text(separator=" ", strip=True)
+        if len(text.split()) >= 12:
+            return text[:400]
+    return ""
+
 def extract_emails(text):
     return re.findall(r'[\w\.-]+@[\w\.-]+\.\w+', text)
 
@@ -83,6 +118,10 @@ def extract_phones(text):
             continue
 
         if digits.startswith(("19", "20")) and len(digits) <= 12:
+            continue
+
+        groups = re.findall(r"\d+", phone)
+        if len(groups) >= 2 and all(len(g) == 4 and 1900 <= int(g) <= 2035 for g in groups):
             continue
 
         phones.append(phone)
@@ -126,17 +165,24 @@ def extract_content_from_url(url):
         if soup.title:
             title = soup.title.get_text(strip=True)
 
+        meta_description = extract_meta_description(soup)
+
         soup = clean_html(soup)
         content = extract_main_content(soup)
         content = truncate_text(content)
         headings = extract_headings(soup)
+        list_items = extract_list_items(soup)
+        lead_paragraph = extract_lead_paragraph(soup)
         emails = extract_emails(content)
         phones = extract_phones(content)
 
         return {
             "url": url,
             "title": title,
+            "meta_description": meta_description,
             "headings": headings,
+            "list_items": list_items,
+            "lead_paragraph": lead_paragraph,
             "content": content,
             "emails": emails,
             "phones": phones,

@@ -32,8 +32,7 @@ class ContactInfo(BaseModel):
 class BrochureResponse(BaseModel):
     company_name: str
     overview: str
-    services: str
-    products: str
+    offerings: str
     industry: str
     contact: ContactInfo
     pdf_data: str

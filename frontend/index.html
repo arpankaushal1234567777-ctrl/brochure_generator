@@ -326,14 +326,9 @@
       <div id="outOverview"></div>
     </div>
 
-    <div class="b-card" id="cardServices">
-      <div class="b-card-label">Services</div>
-      <div id="outServices"></div>
-    </div>
-
-    <div class="b-card" id="cardProducts">
-      <div class="b-card-label">Products</div>
-      <div id="outProducts"></div>
+    <div class="b-card card-span2" id="cardOfferings">
+      <div class="b-card-label">Products &amp; Services</div>
+      <div id="outOfferings"></div>
     </div>
 
     <div class="b-card" id="cardIndustry">
@@ -421,8 +416,7 @@
     document.getElementById("outMeta").textContent = `Generated ${new Date().toLocaleString()}`;
 
     fillSection("outOverview",  data.overview);
-    fillSection("outServices",  data.services);
-    fillSection("outProducts",  data.products);
+    fillSection("outOfferings", data.offerings);
     fillSection("outIndustry",  data.industry);
 
     const c = data.contact || {};

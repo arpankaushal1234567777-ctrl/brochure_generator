@@ -167,14 +167,9 @@ export default function App() {
               {fillSection(brochure.overview)}
             </div>
 
-            <div className="b-card">
-              <div className="b-card-label">Services</div>
-              {fillSection(brochure.services)}
-            </div>
-
-            <div className="b-card">
-              <div className="b-card-label">Products</div>
-              {fillSection(brochure.products)}
+            <div className="b-card card-span2">
+              <div className="b-card-label">Products &amp; Services</div>
+              {fillSection(brochure.offerings)}
             </div>
 
             <div className="b-card">

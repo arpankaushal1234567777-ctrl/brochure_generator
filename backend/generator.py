@@ -19,19 +19,29 @@ def _get_client() -> Groq:
 
 
 def get_ai_response(section_name: str, content_data: str) -> str:
-    from prompts import BROCHURE_SYSTEM_PROMPT, SECTION_TEMPLATES
+    from prompts import (
+        BROCHURE_SYSTEM_PROMPT,
+        OFFERINGS_SYSTEM_PROMPT,
+        INDUSTRY_SYSTEM_PROMPT,
+        SECTION_TEMPLATES,
+    )
 
     template = SECTION_TEMPLATES.get(section_name)
     if not template:
         return ""
 
+    section_prompts = {
+        "offerings": OFFERINGS_SYSTEM_PROMPT,
+        "industry": INDUSTRY_SYSTEM_PROMPT,
+    }
+    system_prompt = section_prompts.get(section_name, BROCHURE_SYSTEM_PROMPT)
     user_prompt = template.format(content=content_data)
 
     for attempt in range(2):          
         try:
             resp = _get_client().chat.completions.create(
                 messages=[
-                    {"role": "system", "content": BROCHURE_SYSTEM_PROMPT},
+                    {"role": "system", "content": system_prompt},
                     {"role": "user",   "content": user_prompt},
                 ],
                 model=GROQ_MODEL,
