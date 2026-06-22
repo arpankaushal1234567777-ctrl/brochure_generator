@@ -1,22 +1,24 @@
+from summarizer import summarize_page
 from config import MAX_CHUNK_WORDS
 
 
 def compress_page(content: str) -> str:
     words = content.split()
     truncated = " ".join(words[:MAX_CHUNK_WORDS])
-    return _deduplicate_lines(truncated)
+
+    summary = summarize_page(truncated)
+    return _deduplicate(summary)
 
 
-def _deduplicate_lines(text: str) -> str:
+def _deduplicate(text: str) -> str:
     seen = set()
     unique = []
-    for raw_line in text.split("\n"):
-        line = " ".join(raw_line.split()).strip()
+    for line in text.split("\n"):
+        line = line.strip()
         if not line:
             continue
-        lowered = line.lower()
-        if lowered in seen:
-            continue
-        seen.add(lowered)
-        unique.append(line)
+        key = line.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(line)
     return "\n".join(unique)

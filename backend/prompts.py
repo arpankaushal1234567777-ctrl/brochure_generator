@@ -1,33 +1,49 @@
-NOT_FOUND_MESSAGE = "Information not found on the website."
+BROCHURE_SYSTEM_PROMPT = """You are a strict data-extraction assistant for corporate brochures.
 
-BROCHURE_SYSTEM_PROMPT = f"""You are an expert business analyst extracting structured company information from website content.
-
-Rules:
-1. Use ONLY the provided extracted website content — no outside knowledge.
-2. Extract every relevant fact you can find, even if phrased differently than expected.
-3. For overview: synthesize a clear 2-4 sentence description of what the company does.
-4. For services/products/industries: extract ALL items mentioned, even briefly.
-5. If a section genuinely has zero evidence, use exactly: {NOT_FOUND_MESSAGE}
-6. Return only valid JSON matching the exact schema — no markdown, no commentary.
-7. Be liberal in extraction: a company mentioning "banking solutions" counts as both a service and an industry.
+RULES (non-negotiable):
+1. Extract ONLY facts that are explicitly stated in the provided content.
+2. NEVER invent, infer, or embellish: products, services, industries, locations,
+   statistics, dates, or awards.
+3. NEVER use generic phrases like "innovative solutions", "industry-leading",
+   "cutting-edge", "world-class", or "tailored services" unless those exact
+   words appear in the source content.
+4. If requested information is absent from the content, output exactly:
+   Information not available
+5. Do NOT add a preamble, explanation, or closing remark.
+6. Bullet points only (use "- " prefix) for list sections.
+   For overview, write 2-3 short sentences maximum.
 """
 
-BROCHURE_JSON_TEMPLATE = f"""Using ONLY the extracted website evidence below, produce one JSON object with exactly this schema:
+SECTION_TEMPLATES = {
 
-{{{{
-  "overview": "2-4 sentence company description grounded in the evidence, or {NOT_FOUND_MESSAGE}",
-  "services": ["service 1", "service 2", "..."],
-  "products": ["product 1", "product 2", "..."],
-  "industries": ["industry 1", "industry 2", "..."]
-}}}}
+    "overview": """Write a 2–3 sentence company overview using ONLY the content below.
+No bullet points. No invented facts.
+If the content is insufficient, output: Information not available
 
-Extraction guidance:
-- overview: What does this company do? What is their mission/scale/focus? Use facts from the text.
-- services: Any service, solution, offering, capability, or consulting area mentioned.
-- products: Any product, platform, software, hardware, brand, or product line mentioned.
-- industries: Any industry, sector, vertical, or market segment mentioned.
-- If a list has no reliable evidence, return an empty array [] — do NOT use {NOT_FOUND_MESSAGE} for lists.
-- Arrays must contain plain strings only — no objects, no nested keys.
+Content:
+{content}""",
 
-Extracted website evidence:
-{{content}}"""
+    "services": """List ONLY services that are explicitly named in the content below.
+Format: one bullet point ("- ") per service.
+Do NOT invent or infer services.
+If none are mentioned, output: Information not available
+
+Content:
+{content}""",
+
+    "products": """List ONLY products that are explicitly named in the content below.
+Format: one bullet point ("- ") per product.
+Do NOT invent or infer products.
+If none are mentioned, output: Information not available
+
+Content:
+{content}""",
+
+    "industry": """List ONLY the industries or sectors explicitly mentioned in the content below.
+Format: one bullet point ("- ") per industry.
+Do NOT invent or infer industries.
+If none are mentioned, output: Information not available
+
+Content:
+{content}""",
+}
