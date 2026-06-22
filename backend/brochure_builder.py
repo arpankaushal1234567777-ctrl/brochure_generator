@@ -1,11 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from compressor import compress_page
+from config import COMBINE_TOP_PAGES, MAX_ITEMS_PER_SECTION, MIN_SECTION_SOURCE_WORDS
 from generator import get_ai_response
-from config import COMBINE_TOP_PAGES
+from prompts import NOT_FOUND_MESSAGE
 
 
-def _compress_all(pages: list) -> list:
-    from compressor import compress_page
-
+def _compress_all(pages: list[dict]) -> list[dict]:
     def _compress(page):
         if not page.get("compressed_content"):
             page["compressed_content"] = compress_page(page["content"])
@@ -13,60 +14,101 @@ def _compress_all(pages: list) -> list:
 
     with ThreadPoolExecutor(max_workers=4) as ex:
         futures = {ex.submit(_compress, p): p for p in pages}
-        for f in as_completed(futures):
+        for future in as_completed(futures):
             try:
-                f.result()
+                future.result()
             except Exception as e:
                 print(f"  [compressor] error: {e}")
 
     return pages
 
 
-def _combine(pages: list) -> str:
-   
-    return "\n\n".join(
-        p["compressed_content"]
-        for p in pages[:COMBINE_TOP_PAGES]
-        if p.get("compressed_content")
-    )
+def _combine(pages: list[dict]) -> str:
+    chunks = []
+    for page in pages[:COMBINE_TOP_PAGES]:
+        text = page.get("compressed_content") or page.get("content") or ""
+        if text:
+            chunks.append(f"URL: {page['url']}\nTitle: {page.get('title', '')}\n{text}")
+    return "\n\n".join(chunks)
 
 
-def build_brochure(profile: dict) -> dict:
-    brochure = {"company_name": profile["company_name"]}
+def _enough_evidence(pages: list[dict]) -> bool:
+    words = sum(len((page.get("compressed_content") or page.get("content") or "").split()) for page in pages[:COMBINE_TOP_PAGES])
+    return words >= MIN_SECTION_SOURCE_WORDS
 
-    
-    all_pages: dict[str, dict] = {}   
-    section_page_map = {
-        "overview":  profile["overview_pages"],
-        "services":  profile["service_pages"],
-        "products":  profile["product_pages"],
-        "industry":  profile["industry_pages"],
+
+def _clean_list(values):
+    seen = set()
+    cleaned = []
+    for value in values[:MAX_ITEMS_PER_SECTION]:
+        item = " ".join(str(value).split()).strip()
+        if not item:
+            continue
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        cleaned.append(item)
+    return cleaned
+
+
+def build_brochure(profile: dict, template_key: str) -> dict:
+    brochure = {
+        "company_name": profile["company_name"],
+        "overview": NOT_FOUND_MESSAGE,
+        "services": [],
+        "products": [],
+        "industries": [],
+        "contact": {
+            "emails": _clean_list(profile.get("emails", [])),
+            "phones": _clean_list(profile.get("phones", [])),
+        },
+        "template_used": template_key,
+        "traceability": {
+            "overview": [],
+            "services": [],
+            "products": [],
+            "industries": [],
+            "contact": [],
+        },
     }
-    for pages in section_page_map.values():
-        for p in pages[:COMBINE_TOP_PAGES]:
-            all_pages[p["url"]] = p
 
-   
+    all_pages: dict[str, dict] = {}
+    section_page_map = {
+        "overview": profile["overview_pages"],
+        "services": profile["service_pages"],
+        "products": profile["product_pages"],
+        "industries": profile["industry_pages"],
+    }
+
+    for pages in section_page_map.values():
+        for page in pages[:COMBINE_TOP_PAGES]:
+            all_pages[page["url"]] = page
+
+    contact_pages = profile.get("contact_pages", [])
+    for page in contact_pages[:COMBINE_TOP_PAGES]:
+        all_pages[page["url"]] = page
+
     print(f"\n[brochure_builder] Compressing {len(all_pages)} unique page(s) via Gemini…")
     _compress_all(list(all_pages.values()))
 
-    
     for section_name, pages in section_page_map.items():
-        if not pages:
-            brochure[section_name] = ""
+        selected_pages = pages[:COMBINE_TOP_PAGES]
+        brochure["traceability"][section_name] = [page["url"] for page in selected_pages]
+
+        if not selected_pages or not _enough_evidence(selected_pages):
             continue
 
-        combined = _combine(pages)
+        combined = _combine(selected_pages)
         if not combined.strip():
-            brochure[section_name] = ""
             continue
 
         print(f"\n[brochure_builder] Generating '{section_name}' section…")
-        brochure[section_name] = get_ai_response(section_name, combined)
+        generated = get_ai_response(section_name, combined)
+        if section_name == "overview":
+            brochure["overview"] = generated or NOT_FOUND_MESSAGE
+        else:
+            brochure[section_name] = _clean_list(generated if isinstance(generated, list) else [])
 
-    brochure["contact"] = {
-        "emails": profile["emails"],
-        "phones": profile["phones"],
-    }
-
+    brochure["traceability"]["contact"] = [page["url"] for page in contact_pages[:COMBINE_TOP_PAGES]]
     return brochure

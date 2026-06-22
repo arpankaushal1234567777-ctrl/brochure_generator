@@ -1,22 +1,30 @@
-# ── Crawling ──────────────────────────────────────────────────────────────────
-TOP_N               = 6       # Reduced from 8 — fewer pages, faster crawl
-MAX_WORKERS         = 6       # Parallel fetch workers
-MAX_CONTENT_WORDS   = 1500    # Reduced: less text → faster summarization
-MIN_CONTENT_WORDS   = 80      # Minimum words to consider a page useful
+# Crawling
+TOP_N = 6
+MAX_WORKERS = 6
+MAX_CONTENT_WORDS = 1800
+MIN_CONTENT_WORDS = 80
 
-# ── Deduplication ─────────────────────────────────────────────────────────────
-SIMILARITY_THRESHOLD = 0.65   # Slightly tighter — drop near-duplicates earlier
+# Deduplication
+SIMILARITY_THRESHOLD = 0.65
 
-# ── LLM ───────────────────────────────────────────────────────────────────────
-# Groq model for final section generation
-GROQ_MODEL          = "llama-3.1-8b-instant"
-GROQ_TEMPERATURE    = 0.1     # Low temp = less hallucination for extraction tasks
-GROQ_MAX_TOKENS     = 512     # Brochure sections don't need long output
+# LLM
+GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_TEMPERATURE = 0.0
+GROQ_MAX_TOKENS = 512
+GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_TIMEOUT_SEC = 12
 
-# Gemini model used for per-page compression
-GEMINI_MODEL        = "gemini-2.0-flash"   # Faster than 2.5-flash
+# Pipeline
+COMBINE_TOP_PAGES = 3
+MAX_CHUNK_WORDS = 1600
+MIN_SECTION_SOURCE_WORDS = 60
+MAX_ITEMS_PER_SECTION = 12
 
-# ── Pipeline ──────────────────────────────────────────────────────────────────
-COMBINE_TOP_PAGES   = 2       # Use top-2 pages per section (was 1, same cost)
-MAX_CHUNK_WORDS     = 1500    # Chunk size fed to Gemini
-GEMINI_TIMEOUT_SEC  = 12      # Hard timeout per Gemini call
+# Templates
+DEFAULT_TEMPLATE = "corporate"
+AVAILABLE_TEMPLATES = {
+    "corporate": "Corporate",
+    "modern": "Modern",
+    "minimal": "Minimal",
+    "executive": "Executive",
+}

@@ -1,49 +1,49 @@
-BROCHURE_SYSTEM_PROMPT = """You are a strict data-extraction assistant for corporate brochures.
+NOT_FOUND_MESSAGE = "Information not found on the website."
 
-RULES (non-negotiable):
-1. Extract ONLY facts that are explicitly stated in the provided content.
-2. NEVER invent, infer, or embellish: products, services, industries, locations,
-   statistics, dates, or awards.
-3. NEVER use generic phrases like "innovative solutions", "industry-leading",
-   "cutting-edge", "world-class", or "tailored services" unless those exact
-   words appear in the source content.
-4. If requested information is absent from the content, output exactly:
-   Information not available
-5. Do NOT add a preamble, explanation, or closing remark.
-6. Bullet points only (use "- " prefix) for list sections.
-   For overview, write 2-3 short sentences maximum.
+BROCHURE_SYSTEM_PROMPT = f"""You are a strict website-grounded brochure extraction assistant.
+
+Rules:
+1. Use only the provided extracted website content.
+2. Do not infer, assume, guess, or invent information.
+3. If information is unavailable, return exactly: {NOT_FOUND_MESSAGE}
+4. Do not use outside knowledge.
+5. Preserve only facts explicitly present in the source snippets.
+6. Remove duplicates and ignore navigation, footer, and legal boilerplate.
 """
 
 SECTION_TEMPLATES = {
+    "overview": f"""Using only the provided extracted content, write a concise 2-3 sentence overview.
+Do not invent any history, scale, awards, offices, products, or services unless explicitly stated.
+If the content is insufficient, return exactly:
+{NOT_FOUND_MESSAGE}
 
-    "overview": """Write a 2–3 sentence company overview using ONLY the content below.
-No bullet points. No invented facts.
-If the content is insufficient, output: Information not available
+Extracted content:
+{{content}}""",
+    "services": f"""Using only the provided extracted content, return a JSON array of services explicitly stated on the website.
+Rules:
+- Each item must be text copied or tightly normalized from the source.
+- No inferred umbrella categories.
+- If nothing reliable is present, return exactly:
+{NOT_FOUND_MESSAGE}
 
-Content:
-{content}""",
+Extracted content:
+{{content}}""",
+    "products": f"""Using only the provided extracted content, return a JSON array of products explicitly stated on the website.
+Rules:
+- Each item must be text copied or tightly normalized from the source.
+- Do not infer product lines from company context.
+- If nothing reliable is present, return exactly:
+{NOT_FOUND_MESSAGE}
 
-    "services": """List ONLY services that are explicitly named in the content below.
-Format: one bullet point ("- ") per service.
-Do NOT invent or infer services.
-If none are mentioned, output: Information not available
+Extracted content:
+{{content}}""",
+    "industries": f"""Using only the provided extracted content, return a JSON array of industries or sectors explicitly stated on the website.
+Rules:
+- Each item must be directly supported by the source.
+- Do not guess industries from products or services.
+- If nothing reliable is present, return exactly:
+{NOT_FOUND_MESSAGE}
 
-Content:
-{content}""",
-
-    "products": """List ONLY products that are explicitly named in the content below.
-Format: one bullet point ("- ") per product.
-Do NOT invent or infer products.
-If none are mentioned, output: Information not available
-
-Content:
-{content}""",
-
-    "industry": """List ONLY the industries or sectors explicitly mentioned in the content below.
-Format: one bullet point ("- ") per industry.
-Do NOT invent or infer industries.
-If none are mentioned, output: Information not available
-
-Content:
-{content}""",
+Extracted content:
+{{content}}""",
 }
