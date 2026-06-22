@@ -111,8 +111,7 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
         if not links:
             raise Exception("No links discovered from the target page.")
 
-        homepage_data = extract_content_parallel([website_url], max_workers=1)
-        homepage = homepage_data.get(website_url)
+        homepage = extract_content_parallel([website_url], max_workers=1).get(website_url)
 
         if homepage and not _is_blocked(homepage):
             company_profile["company_name"] = homepage["company_name"]
@@ -128,8 +127,6 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
 
         print(f"\n=== Extracting {len(top_urls)} page(s) ===")
         page_data = extract_content_parallel(top_urls, max_workers=6)
-        if homepage:
-            page_data[website_url] = homepage
 
         from similarity_filter import remove_similar_pages
 
