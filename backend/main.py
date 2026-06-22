@@ -49,6 +49,26 @@ def _valid_template(template_key: str | None) -> str:
     return DEFAULT_TEMPLATE
 
 
+def _push_candidate(bucket: dict[str, list[tuple[int, dict]]], section: str, score: int, page: dict) -> None:
+    if score <= 0:
+        return
+    bucket[section].append((score, page))
+
+
+def _select_pages(scored_pages: list[tuple[int, dict]], limit: int) -> list[dict]:
+    selected = []
+    seen = set()
+    for score, page in sorted(scored_pages, key=lambda item: item[0], reverse=True):
+        url = page["url"]
+        if url in seen:
+            continue
+        seen.add(url)
+        selected.append(page | {"section_score": score})
+        if len(selected) == limit:
+            break
+    return selected
+
+
 def generate_brochure(website_url: str, template_key: str | None = None) -> dict:
     start_time = time.time()
     template_key = _valid_template(template_key)
@@ -82,6 +102,8 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
 
         ranked = rank_urls(links)
         top_urls = [url for _, url in ranked[:TOP_N]]
+        if website_url not in top_urls:
+            top_urls.insert(0, website_url)
 
         print(f"\n=== Extracting {len(top_urls)} page(s) ===")
         page_data = extract_content_parallel(top_urls, max_workers=6)
@@ -91,6 +113,13 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
         unique_pages = remove_similar_pages(page_data)
         print(f"  After dedup: {len(unique_pages)} unique page(s)")
 
+        section_candidates = {
+            "overview": [],
+            "contact": [],
+            "products": [],
+            "services": [],
+            "industries": [],
+        }
         seen_snippets: set[str] = set()
         for data in unique_pages:
             if not data or _is_blocked(data):
@@ -112,58 +141,68 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
             ctx = f"{url} {title} {heads} {body}"
 
             scores = {k: 0 for k in ("overview", "contact", "products", "services", "industries")}
+            heading_blob = " ".join(data.get("headings", [])[:8]).lower()
 
-            for kw in ["about", "mission", "vision", "history", "profile", "who we are", "leadership", "board"]:
+            for kw in ["about", "mission", "vision", "history", "profile", "who we are", "leadership", "board", "business overview", "overview"]:
                 if kw in ctx:
                     scores["overview"] += 1
-            if "about" in url or "profile" in url:
+            if url.rstrip("/") == website_url.rstrip("/").lower():
+                scores["overview"] += 4
+            if "about" in url or "profile" in url or "company" in url:
                 scores["overview"] += 3
 
-            for kw in ["contact", "sales", "support", "help", "location", "reach us", "get in touch", "office"]:
+            for kw in ["contact", "sales", "support", "help", "location", "reach us", "get in touch", "office", "registered office"]:
                 if kw in ctx:
                     scores["contact"] += 1
+            if data.get("emails") or data.get("phones"):
+                scores["contact"] += 4
             if "contact" in url or "support" in url:
                 scores["contact"] += 3
 
-            for kw in ["product", "platform", "brand", "software", "hardware", "device", "portfolio"]:
+            for kw in ["product", "products", "platform", "brand", "brands", "software", "hardware", "device", "portfolio", "consumer", "retail products"]:
                 if kw in ctx:
                     scores["products"] += 1
-            if "product" in url or "brand" in url:
+            if "product" in url or "brand" in url or "portfolio" in url:
                 scores["products"] += 2
 
-            for kw in ["service", "solution", "consulting", "offering", "capability"]:
+            for kw in ["service", "services", "solution", "solutions", "consulting", "offering", "offerings", "capability", "capabilities", "what we do"]:
                 if kw in ctx:
                     scores["services"] += 1
             if "service" in url or "solution" in url:
                 scores["services"] += 2
 
-            for kw in ["industry", "sector", "banking", "healthcare", "manufacturing", "retail", "telecom", "energy", "education"]:
+            for kw in ["industry", "industries", "sector", "sectors", "markets", "applications", "banking", "healthcare", "manufacturing", "retail", "telecom", "energy", "education"]:
                 if kw in ctx:
                     scores["industries"] += 1
             if "industry" in url or "sector" in url:
                 scores["industries"] += 3
+            if any(keyword in heading_blob for keyword in ["products", "brands", "portfolio"]):
+                scores["products"] += 3
+            if any(keyword in heading_blob for keyword in ["services", "solutions", "offerings", "capabilities"]):
+                scores["services"] += 3
+            if any(keyword in heading_blob for keyword in ["industries", "sectors", "markets", "applications"]):
+                scores["industries"] += 3
+            if any(keyword in heading_blob for keyword in ["contact", "office", "location"]):
+                scores["contact"] += 3
+            if any(keyword in heading_blob for keyword in ["about", "overview", "company", "businesses"]):
+                scores["overview"] += 3
 
-            max_score = max(scores.values())
-            if max_score == 0:
-                continue
-
-            threshold = max(1, max_score - 1)
-            if scores["overview"] >= threshold:
-                company_profile["overview_pages"].append(data)
-            if scores["contact"] >= threshold:
-                company_profile["contact_pages"].append(data)
-            if scores["products"] >= max_score:
-                company_profile["product_pages"].append(data)
-            if scores["services"] >= threshold:
-                company_profile["service_pages"].append(data)
-            if scores["industries"] >= threshold:
-                company_profile["industry_pages"].append(data)
+            _push_candidate(section_candidates, "overview", scores["overview"], data)
+            _push_candidate(section_candidates, "contact", scores["contact"], data)
+            _push_candidate(section_candidates, "products", scores["products"], data)
+            _push_candidate(section_candidates, "services", scores["services"], data)
+            _push_candidate(section_candidates, "industries", scores["industries"], data)
 
             company_profile["emails"].extend(data.get("emails", []))
             company_profile["phones"].extend(data.get("phones", []))
 
         company_profile["emails"] = _normalize_contact(company_profile["emails"])
         company_profile["phones"] = _normalize_contact(company_profile["phones"])
+        company_profile["overview_pages"] = _select_pages(section_candidates["overview"], TOP_N)
+        company_profile["contact_pages"] = _select_pages(section_candidates["contact"], TOP_N)
+        company_profile["product_pages"] = _select_pages(section_candidates["products"], TOP_N)
+        company_profile["service_pages"] = _select_pages(section_candidates["services"], TOP_N)
+        company_profile["industry_pages"] = _select_pages(section_candidates["industries"], TOP_N)
 
     except Exception as e:
         print(f"Pipeline error: {e}")

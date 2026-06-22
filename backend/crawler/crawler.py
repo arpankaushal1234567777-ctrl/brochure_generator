@@ -47,18 +47,18 @@ def get_links(url):
     return list(links)
 
 def rank_urls(urls):
-    # Balanced weights spanning multi-sector entities (Tech, Manufacturing, Retail, Telecom)
     positive = {
-        "about": 30, "company": 30, "history": 25, "profile": 25, "story": 20, "leadership": 20, "chairman": 20,
-        "services": 30, "solutions": 30, "licensing": 25, "features": 20, "digital": 20,
-        "products": 30, "platform": 30, "brands": 30, "software": 25, "hardware": 25, "devices": 25,
-        "contact": 35, "sales": 35, "support": 30, "help": 30, "connect": 30, "investor": 25, "office": 25,
-        "business": 25, "enterprise": 25, "industry": 25, "industries": 25, "petrochemicals": 25, "retail": 25
+        "about": 40, "company": 34, "history": 28, "profile": 28, "story": 20, "leadership": 18,
+        "business": 30, "businesses": 36, "what-we-do": 36, "operations": 28, "segments": 30,
+        "services": 34, "solutions": 34, "offerings": 30, "capabilities": 28, "digital": 20,
+        "products": 36, "product": 34, "portfolio": 34, "brands": 34, "brand": 28,
+        "industries": 34, "industry": 34, "sectors": 30, "sector": 26, "markets": 24,
+        "contact": 40, "sales": 32, "support": 30, "help": 26, "connect": 26, "office": 26, "location": 26
     }
 
     negative = {
-        "index": -100, "blog": -100, "news": -100, "release": -100, "media": -50,
-        "privacy": -100, "terms": -100, "store": -150, "gift-card": -150, "career": -80, "jobs": -80
+        "index": -80, "blog": -90, "news": -60, "release": -50, "media": -30,
+        "privacy": -100, "terms": -100, "store": -120, "gift-card": -150, "career": -80, "jobs": -80
     }
 
     scored = []

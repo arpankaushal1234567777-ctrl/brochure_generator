@@ -36,6 +36,22 @@ def _normalize_list(items: list[str]) -> list[str]:
     return cleaned
 
 
+def _clean_overview(text: str) -> str:
+    value = " ".join(text.split()).strip()
+    lowered = value.lower()
+    prefixes = [
+        "here is a concise 2-3 sentence overview based on the provided extracted content:",
+        "here is a concise 3-sentence overview based on the provided extracted content:",
+        "here is a concise overview based on the provided extracted content:",
+        "based on the provided extracted content,",
+    ]
+    for prefix in prefixes:
+        if lowered.startswith(prefix):
+            value = value[len(prefix):].strip(" :")
+            lowered = value.lower()
+    return value or NOT_FOUND_MESSAGE
+
+
 def get_ai_response(section_name: str, content_data: str):
     template = SECTION_TEMPLATES.get(section_name)
     if not template or not content_data.strip():
@@ -56,7 +72,7 @@ def get_ai_response(section_name: str, content_data: str):
             )
             content = (resp.choices[0].message.content or "").strip()
             if section_name == "overview":
-                return content or NOT_FOUND_MESSAGE
+                return _clean_overview(content)
 
             if content == NOT_FOUND_MESSAGE:
                 return []
