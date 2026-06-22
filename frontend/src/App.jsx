@@ -22,6 +22,46 @@ const LOADING_STEPS = [
 
 const EMPTY_STATUS = { msg: "", type: "" };
 
+function safeString(value, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function safeArray(value, fallback = []) {
+  return Array.isArray(value) ? value.filter(item => typeof item === "string") : fallback;
+}
+
+function normalizeBrochure(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const contact = raw.contact && typeof raw.contact === "object" ? raw.contact : {};
+  const traceability = raw.traceability && typeof raw.traceability === "object" ? raw.traceability : {};
+
+  return {
+    ...raw,
+    company_name: safeString(raw.company_name, "Unknown Company"),
+    overview: safeString(raw.overview, NOT_FOUND_MESSAGE),
+    services: safeArray(raw.services),
+    products: safeArray(raw.products),
+    industries: safeArray(raw.industries),
+    generated_at: safeString(raw.generated_at, ""),
+    template_used: safeString(raw.template_used, "corporate"),
+    pdf_data: safeString(raw.pdf_data, ""),
+    pdf_available: Boolean(raw.pdf_available),
+    generation_time: typeof raw.generation_time === "number" ? raw.generation_time : 0,
+    contact: {
+      emails: safeArray(contact.emails, [NOT_FOUND_MESSAGE]),
+      phones: safeArray(contact.phones, [NOT_FOUND_MESSAGE]),
+    },
+    traceability: {
+      overview: safeArray(traceability.overview),
+      services: safeArray(traceability.services),
+      products: safeArray(traceability.products),
+      industries: safeArray(traceability.industries),
+      contact: safeArray(traceability.contact),
+    },
+  };
+}
+
 function createPdfBlob(pdfData) {
   if (!pdfData) return null;
   const bytes = atob(pdfData);
@@ -59,11 +99,12 @@ export default function App() {
     if (!saved) return;
     try {
       const parsed = JSON.parse(saved);
-      setUrl(parsed.url || "");
-      setTemplate(parsed.template || "corporate");
-      setBrochure(parsed.brochure || null);
-      setPdfBlob(createPdfBlob(parsed.brochure?.pdf_data));
-      if (parsed.brochure) {
+      const normalizedBrochure = normalizeBrochure(parsed.brochure);
+      setUrl(safeString(parsed.url, ""));
+      setTemplate(safeString(parsed.template, "corporate"));
+      setBrochure(normalizedBrochure);
+      setPdfBlob(createPdfBlob(normalizedBrochure?.pdf_data));
+      if (normalizedBrochure) {
         setStatus({ msg: "Restored your last generated brochure.", type: "ok" });
       }
     } catch {
@@ -115,7 +156,7 @@ export default function App() {
   }
 
   async function handleGenerate() {
-    const trimmed = url.trim();
+    const trimmed = safeString(url).trim();
     if (!trimmed) {
       setMsg("Please enter a website URL.", "error");
       return;
@@ -143,9 +184,9 @@ export default function App() {
         throw new Error(err.detail || `Server error ${resp.status}`);
       }
 
-      const data = await resp.json();
+      const data = normalizeBrochure(await resp.json());
       setBrochure(data);
-      setPdfBlob(createPdfBlob(data.pdf_data));
+      setPdfBlob(createPdfBlob(data?.pdf_data));
       persistSession(trimmed, template, data);
       setMsg("Brochure generated successfully.", "ok");
     } catch (error) {
