@@ -73,11 +73,18 @@ def generate_brochure(website_url: str) -> dict:
 
         page_data = extract_content_parallel(top_urls,max_workers=5)
 
+        from similarity_filter import remove_similar_pages
+
+        unique_pages = remove_similar_pages(page_data)
+
         metrics["extract_time"] = round(time.time() - extract_start,2)
 
         seen_snippets = set()
 
-        for url, data in page_data.items():
+        for data in unique_pages:
+            
+            url = data["url"]
+            
             if not data or is_blocked_page(data):
                 continue
             if len(data["content"].split()) < MIN_CONTENT_WORDS:
