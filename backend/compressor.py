@@ -1,46 +1,24 @@
-from content_extractor import chunk_text
-from summarizer import summarize_chunk
+from summarizer import summarize_page
+from config import MAX_CHUNK_WORDS
 
 
-def compress_page(content):
+def compress_page(content: str) -> str:
+    words = content.split()
+    truncated = " ".join(words[:MAX_CHUNK_WORDS])
 
-    chunks = chunk_text(content)
+    summary = summarize_page(truncated)
+    return _deduplicate(summary)
 
-    summaries = []
 
-    for chunk in chunks:
-
-        summary = summarize_chunk(chunk)
-
-        if summary:
-            summaries.append(summary)
-
-    merged = "\n".join(summaries)
-
-    return deduplicate_summary(merged)
-
-def deduplicate_summary(text):
-
-    lines = text.split("\n")
-
-    unique = []
-
+def _deduplicate(text: str) -> str:
     seen = set()
-
-    for line in lines:
-
+    unique = []
+    for line in text.split("\n"):
         line = line.strip()
-
         if not line:
             continue
-
-        lower = line.lower()
-
-        if lower in seen:
-            continue
-
-        seen.add(lower)
-
-        unique.append(line)
-
+        key = line.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(line)
     return "\n".join(unique)
