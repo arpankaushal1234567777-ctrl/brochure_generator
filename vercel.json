@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://brochuregenerator-production-2f19.up.railway.app/:path*"
+    }
+  ]
+}
