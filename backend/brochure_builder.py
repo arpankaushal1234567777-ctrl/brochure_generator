@@ -104,6 +104,7 @@ def build_brochure(profile: dict, template_key: str) -> dict:
     print(f"\n[brochure_builder] Compressing {len(all_pages)} unique page(s) via Gemini…")
     _compress_all(list(all_pages.values()))
 
+    generation_inputs = {}
     for section_name, pages in section_page_map.items():
         selected_pages = pages[:COMBINE_TOP_PAGES]
         brochure["traceability"][section_name] = [page["url"] for page in selected_pages]
@@ -115,12 +116,21 @@ def build_brochure(profile: dict, template_key: str) -> dict:
         if not combined.strip():
             continue
 
+        generation_inputs[section_name] = combined
+
+    def _generate_section(item):
+        section_name, combined = item
         print(f"\n[brochure_builder] Generating '{section_name}' section…")
-        generated = get_ai_response(section_name, combined)
-        if section_name == "overview":
-            brochure["overview"] = generated or NOT_FOUND_MESSAGE
-        else:
-            brochure[section_name] = _clean_list(generated if isinstance(generated, list) else [])
+        return section_name, get_ai_response(section_name, combined)
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futures = [ex.submit(_generate_section, item) for item in generation_inputs.items()]
+        for future in as_completed(futures):
+            section_name, generated = future.result()
+            if section_name == "overview":
+                brochure["overview"] = generated or NOT_FOUND_MESSAGE
+            else:
+                brochure[section_name] = _clean_list(generated if isinstance(generated, list) else [])
 
     brochure["traceability"]["contact"] = [page["url"] for page in contact_pages[:COMBINE_TOP_PAGES]]
     return brochure

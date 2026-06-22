@@ -47,16 +47,43 @@ def _parse_list_response(content: str) -> list[str]:
     try:
         parsed = json.loads(fenced)
         if isinstance(parsed, list):
-            return _normalize_list([str(item) for item in parsed])
+            normalized = []
+            for item in parsed:
+                if isinstance(item, str):
+                    normalized.append(item)
+                elif isinstance(item, dict):
+                    normalized.extend(str(value) for value in item.values() if isinstance(value, str))
+            return _normalize_list(normalized)
     except Exception:
         pass
+
+    json_array_match = re.search(r"\[[\s\S]*\]", fenced)
+    if json_array_match:
+        try:
+            parsed = json.loads(json_array_match.group(0))
+            if isinstance(parsed, list):
+                normalized = []
+                for item in parsed:
+                    if isinstance(item, str):
+                        normalized.append(item)
+                    elif isinstance(item, dict):
+                        normalized.extend(str(value) for value in item.values() if isinstance(value, str))
+                return _normalize_list(normalized)
+        except Exception:
+            pass
 
     lines = []
     for raw_line in fenced.splitlines():
         line = raw_line.strip()
         if not line:
             continue
+        if line.lower().startswith("here is the json array"):
+            continue
+        if line in {"```json", "```", "[", "]", "{", "}"}:
+            continue
         line = re.sub(r"^[-*•]\s*", "", line)
+        line = re.sub(r'^"(?:name|service|industry|product)"\s*:\s*', "", line)
+        line = re.sub(r"^(?:name|service|industry|product)\s*:\s*", "", line, flags=re.IGNORECASE)
         if line.startswith('"') and line.endswith('"'):
             line = line[1:-1]
         line = line.strip(" ,")
@@ -71,7 +98,7 @@ def _parse_list_response(content: str) -> list[str]:
         except Exception:
             return []
 
-    return _normalize_list(lines)
+    return _normalize_list([line for line in lines if len(line) > 1])
 
 
 def _clean_overview(text: str) -> str:

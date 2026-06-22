@@ -124,9 +124,12 @@ def generate_brochure(website_url: str, template_key: str | None = None) -> dict
         top_urls = [url for _, url in ranked[:TOP_N]]
         if website_url not in top_urls:
             top_urls.insert(0, website_url)
+        top_urls = list(dict.fromkeys(top_urls))
 
         print(f"\n=== Extracting {len(top_urls)} page(s) ===")
         page_data = extract_content_parallel(top_urls, max_workers=6)
+        if homepage:
+            page_data[website_url] = homepage
 
         from similarity_filter import remove_similar_pages
 
